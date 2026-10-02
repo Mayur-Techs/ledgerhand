@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Bills - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Bills</h3>
+<form method="get" action="/bills" style="margin-bottom: 20px;">
+    Search: <input type="text" name="q" value="{{ q }}" placeholder="Invoice or Ref">
+    Vendor: <input type="text" name="vendor" value="{{ vendor }}" placeholder="Vendor Name">
+    <button type="submit">Search</button>
+    <a href="/bills/new" class="btn" style="float: right;">New Bill</a>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Vendor Name</th>
+            <th>Invoice No</th>
+            <th>Internal Ref</th>
+            <th>Amount (Paise)</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for b in bills %}
+        <tr>
+            <td>{{ b.id }}</td>
+            <td>{{ b.vendor_name }}</td>
+            <td>{{ b.invoice_no }}</td>
+            <td>{{ b.internal_ref }}</td>
+            <td>{{ "%.2f"|format(b.total_paise / 100) }}</td>
+            <td>{{ b.status }}</td>
+            <td><a href="/bills/{{ b.id }}">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div>
+    {% if page > 1 %}
+    <a href="/bills?page={{ page - 1 }}&q={{ q }}&vendor={{ vendor }}">Previous</a>
+    {% endif %}
+    Page {{ page }} of {{ total_pages }}
+    {% if page < total_pages %}
+    <a href="/bills?page={{ page + 1 }}&q={{ q }}&vendor={{ vendor }}">Next</a>
+    {% endif %}
+</div>
+{% endblock %}

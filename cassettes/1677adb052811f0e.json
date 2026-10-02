@@ -1,0 +1,20 @@
+{
+  "vendor_gstin_text": "27AABCS1234A1Z5",
+  "vendor_gstin_confidence": 0.98,
+  "vendor_name_text": "Sharma Traders",
+  "invoice_no_text": "SHR-2026-102",
+  "invoice_no_confidence": 0.98,
+  "invoice_date_text": "01/09/2026",
+  "invoice_date_confidence": 0.95,
+  "po_no_text": "PO-2026-102",
+  "po_no_confidence": 0.95,
+  "total_text": "Rs.5,000.00",
+  "total_confidence": 0.98,
+  "subtotal_text": "Rs.5,000.00",
+  "tax_text": "Rs.0.00",
+  "bank_account_text": "",
+  "currency_text": "INR",
+  "lines_text": [],
+  "raw_text": "",
+  "injection_signals": []
+}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}PO Detail - LedgerBooks{% endblock %}
+{% block content %}
+<h3>PO: {{ po.po_no }}</h3>
+<p><strong>Vendor ID:</strong> <a href="/vendors/{{ po.vendor_id }}">{{ po.vendor_id }}</a></p>
+<p><strong>Status:</strong> {{ po.status }}</p>
+
+<h4>Lines</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Rate (Paise)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for l in lines %}
+        <tr>
+            <td>{{ l.item }}</td>
+            <td>{{ l.ordered_qty }}</td>
+            <td>{{ l.received_qty }}</td>
+            <td>{{ l.rate_paise }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="/pos">Back to POs</a>
+{% endblock %}

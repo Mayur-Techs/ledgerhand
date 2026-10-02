@@ -1,0 +1,52 @@
+org:
+  currency: INR
+  max_delegable_paise: 10000000        # Rs 1,00,000: most a goal may pre-authorise
+  hard_ceiling_paise: 50000000         # Rs 5,00,000: payment BLOCKED above
+  price_tolerance_pct: 3.0
+  qty_tolerance_pct: 0
+  rounding_tolerance_paise: 100
+  date_format: DMY
+  near_duplicate:
+    max_edit_distance: 2
+  require_po: true
+  require_receipt: true
+  always_human:
+    - BANK_CHANGED
+    - DUPLICATE_NEAR
+    - BUSINESS_KEY_CONFLICT
+    - VENDOR_UNKNOWN
+  unsupported:
+    - CREDIT_NOTE
+    - MULTI_PO
+    - FOREIGN_CURRENCY
+  approval_ttl_hours: 24
+  skip_weekend_payment_dates: true
+extraction:
+  min_confidence_critical: 0.8         # vendor GSTIN, invoice no, total, PO no
+injection:
+  high:
+    - "ignore (all )?(previous|prior) instructions"
+    - "^\\s*system\\s*:"
+    - "mark (this )?(as )?approved"
+    - "approve (and|&) pay"
+  medium:
+    - "new bank account"
+    - "updated bank details"
+    - "kindly remit to"
+runtime:
+  max_steps_per_task: 35
+  max_run_minutes: 15
+  wait_for_approvals_s: 120
+  retry:
+    max_attempts: 2
+    prepare_max_failures: 2
+  verify:
+    poll_timeout_s: 15           # must be > time for verify to find bill after 504
+    poll_interval_s: [0.5, 1, 2, 2]
+browser:
+  allowed_paths:
+    - "/login"
+    - "/vendors"
+    - "/pos"
+    - "/bills"
+    - "/payments"

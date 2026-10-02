@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Admin Chaos - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Chaos Control</h3>
+<p><strong>Enforce Unique:</strong> {% if enforce_unique %}ON{% else %}OFF{% endif %} (Requires restart to change)</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Armed</th>
+            <th>After N Calls</th>
+            <th>Calls Remaining</th>
+            <th>Times</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f in flags %}
+        <tr>
+            <td>{{ f.name }}</td>
+            <td>{% if f.armed %}YES{% else %}NO{% endif %}</td>
+            <td>{{ f.after_n_calls }}</td>
+            <td>{{ f.calls_remaining }}</td>
+            <td>{{ f.times }}</td>
+            <td>
+                <button onclick="disarm('{{ f.name }}')">Disarm</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4>Arm New Fault</h4>
+<div class="form-group">
+    <label>Fault Name</label>
+    <select id="faultName">
+        <option value="timeout_after_commit">timeout_after_commit</option>
+        <option value="session_expiry">session_expiry</option>
+        <option value="ui_drift">ui_drift</option>
+    </select>
+</div>
+<div class="form-group">
+    <label>After N Calls</label>
+    <input type="number" id="faultAfter" value="0">
+</div>
+<div class="form-group">
+    <label>Times</label>
+    <input type="number" id="faultTimes" value="1">
+</div>
+<button onclick="armFault()">Arm Fault</button>
+
+<script>
+    async function disarm(name) {
+        await fetch('/admin/chaos/disarm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: name})
+        });
+        location.reload();
+    }
+
+    async function armFault() {
+        const name = document.getElementById('faultName').value;
+        const after = parseInt(document.getElementById('faultAfter').value);
+        const times = parseInt(document.getElementById('faultTimes').value);
+        
+        await fetch('/admin/chaos', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                name: name,
+                after_n_calls: after,
+                times: times
+            })
+        });
+        location.reload();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}New Bill - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Create New Bill</h3>
+
+<form method="post" action="/bills/new" id="billForm" onsubmit="return handleFormSubmit(event)">
+    <div class="form-group">
+        <label>Vendor</label>
+        <select name="vendor_id" id="{% if ui_variant == 'v2' %}vnd-select{% else %}vendor_id{% endif %}" required onchange="filterAccounts()">
+            <option value="">--Select Vendor--</option>
+            {% for v in vendors %}
+            <option value="{{ v.id }}">{{ v.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>Bank Account</label>
+        <select name="bank_account_id" id="bank_account_id" required disabled>
+            <option value="">--Select Account--</option>
+            {% for a in accounts %}
+            <option value="{{ a.id }}" data-vendor="{{ a.vendor_id }}">{{ a.bank_name }} - {{ a.account_number }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>Invoice No</label>
+        <input type="text" name="invoice_no" id="{% if ui_variant == 'v2' %}inv-input{% else %}invoice_no{% endif %}" required>
+    </div>
+
+    <div class="form-group">
+        <label>Invoice Date (dd/mm/yyyy)</label>
+        <input type="text" name="invoice_date" id="{% if ui_variant == 'v2' %}dt-input{% else %}invoice_date{% endif %}" required>
+    </div>
+
+    {% if ui_variant != 'v2' %}
+    <div class="form-group">
+        <label>Internal Ref</label>
+        <input type="text" name="internal_ref" id="internal_ref" required>
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label>PO No</label>
+        <input type="text" name="po_no" id="{% if ui_variant == 'v2' %}po-input{% else %}po_no{% endif %}">
+    </div>
+
+    <div class="form-group">
+        <label>Currency</label>
+        <input type="text" name="currency" id="{% if ui_variant == 'v2' %}curr-input{% else %}currency{% endif %}" value="INR" required>
+    </div>
+
+    {% if ui_variant == 'v2' %}
+    <div class="form-group">
+        <label>Internal Reference</label>
+        <input type="text" name="internal_ref" id="int-ref-v2" required>
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label>Attachment</label>
+        <input type="file" name="attachment" id="{% if ui_variant == 'v2' %}att-input{% else %}attachment{% endif %}">
+    </div>
+
+    <h4>Line Items</h4>
+    <table id="linesTable">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Rate (Paise)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="linesBody">
+            <!-- JS dynamic -->
+        </tbody>
+    </table>
+    <button type="button" onclick="addLine()">Add Line</button>
+
+    <br><br>
+    <!-- Hidden input for action to differentiate buttons -->
+    <input type="hidden" name="action" id="formAction" value="">
+    
+    <button type="submit" onclick="document.getElementById('formAction').value='Save Draft'">Save Draft</button>
+    <button type="submit" onclick="document.getElementById('formAction').value='Submit Bill'">{% if ui_variant == 'v2' %}Post Bill{% else %}Submit Bill{% endif %}</button>
+</form>
+
+<script>
+    let lineIdx = 0;
+    function addLine() {
+        const tbody = document.getElementById("linesBody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="text" name="line_desc_${lineIdx}" required></td>
+            <td><input type="number" name="line_qty_${lineIdx}" class="line-qty" value="1" onchange="calcTotal()" required></td>
+            <td><input type="number" name="line_rate_${lineIdx}" class="line-rate" value="0" onchange="calcTotal()" required></td>
+            <td><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotal();">Remove</button></td>
+        `;
+        tbody.appendChild(tr);
+        lineIdx++;
+    }
+
+    function calcTotal() {
+        let total = 0;
+        const qtys = document.getElementsByClassName("line-qty");
+        const rates = document.getElementsByClassName("line-rate");
+        for(let i = 0; i < qtys.length; i++) {
+            total += (parseInt(qtys[i].value) || 0) * (parseInt(rates[i].value) || 0);
+        }
+        return total;
+    }
+
+    function handleFormSubmit(e) {
+        const action = document.getElementById('formAction').value;
+        if (action === 'Submit Bill' || action === 'Post Bill') {
+            const total = calcTotal();
+            const rs = total / 100;
+            if (!confirm(`Post bill of ₹${rs}?`)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function filterAccounts() {
+        const vendorSelect = document.querySelector("select[name='vendor_id']");
+        const accountSelect = document.querySelector("select[name='bank_account_id']");
+        const vendorId = vendorSelect.value;
+        
+        if (!vendorId) {
+            accountSelect.disabled = true;
+            return;
+        }
+        
+        accountSelect.disabled = false;
+        accountSelect.value = "";
+        
+        Array.from(accountSelect.options).forEach(opt => {
+            if (opt.value === "") return; // Skip placeholder
+            if (opt.getAttribute("data-vendor") === vendorId) {
+                opt.style.display = "";
+            } else {
+                opt.style.display = "none";
+            }
+        });
+    }
+
+    // Add first line by default
+    addLine();
+</script>
+{% endblock %}

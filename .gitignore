@@ -1,0 +1,43 @@
+# Ledgerhand .gitignore
+
+# Environment / secrets
+.env
+
+# SQLite databases and WAL/SHM companions
+*.db
+*.db-wal
+*.db-shm
+
+# Runtime outputs — never commit run artifacts
+runs/
+data/batch_a/*.pdf
+data/batch_b/*.pdf
+
+# Private docs — not for repository
+docs/private/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+.venv/
+env/
+
+# Build outputs
+*.egg-info/
+dist/
+build/
+
+# Playwright
+.playwright/
+
+# Editor / tool state
+.kilo/
+.vscode/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

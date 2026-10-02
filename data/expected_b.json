@@ -1,0 +1,42 @@
+[
+  {
+    "file": "batch_b/B01.pdf",
+    "vendor": "V1",
+    "invoice_no": "SHR2026101",
+    "bill_decision": "ENTER",
+    "pay_decision": "NONE",
+    "reason_code": "OK_ENTER_ONLY"
+  },
+  {
+    "file": "batch_b/B02.pdf",
+    "vendor": "V2",
+    "invoice_no": "KVR2026201",
+    "bill_decision": "ENTER",
+    "pay_decision": "NONE",
+    "reason_code": "OK_ENTER_ONLY"
+  },
+  {
+    "file": "batch_b/B03.pdf",
+    "vendor": "V1",
+    "invoice_no": "SHR2026102",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_UNSUPPORTED_CREDIT_NOTE"
+  },
+  {
+    "file": "batch_b/B04.pdf",
+    "vendor": "V3",
+    "invoice_no": "NMB2026301",
+    "bill_decision": "SKIP",
+    "pay_decision": "NONE",
+    "reason_code": "SKIP"
+  },
+  {
+    "file": "batch_b/B05.pdf",
+    "vendor": "V5",
+    "invoice_no": "BLP2026401",
+    "bill_decision": "SKIP",
+    "pay_decision": "NONE",
+    "reason_code": "SKIP"
+  }
+]

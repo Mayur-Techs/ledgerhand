@@ -1,0 +1,20 @@
+{
+  "vendor_gstin_text": "07AABCN9012C1Z1",
+  "vendor_gstin_confidence": 0.98,
+  "vendor_name_text": "Nimbus Logistics LLP",
+  "invoice_no_text": "INV-2026-003",
+  "invoice_no_confidence": 0.98,
+  "invoice_date_text": "10-Sep-2026",
+  "invoice_date_confidence": 0.95,
+  "po_no_text": "PO-2026-003",
+  "po_no_confidence": 0.95,
+  "total_text": "₹72,000.00",
+  "total_confidence": 0.98,
+  "subtotal_text": "₹72,000.00",
+  "tax_text": "₹0.00",
+  "bank_account_text": "",
+  "currency_text": "INR",
+  "lines_text": [],
+  "raw_text": "",
+  "injection_signals": []
+}

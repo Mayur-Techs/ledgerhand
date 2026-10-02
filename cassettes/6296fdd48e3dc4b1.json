@@ -1,0 +1,20 @@
+{
+  "vendor_gstin_text": "29AABCK5678B1Z3",
+  "vendor_gstin_confidence": 0.98,
+  "vendor_name_text": "Kaveri Foods Pvt Ltd",
+  "invoice_no_text": "KVR-2026-201",
+  "invoice_no_confidence": 0.98,
+  "invoice_date_text": "02/09/2026",
+  "invoice_date_confidence": 0.95,
+  "po_no_text": "PO-2026-201",
+  "po_no_confidence": 0.95,
+  "total_text": "Rs.1,23,456.00",
+  "total_confidence": 0.98,
+  "subtotal_text": "Rs.1,23,456.00",
+  "tax_text": "Rs.0.00",
+  "bank_account_text": "",
+  "currency_text": "INR",
+  "lines_text": [],
+  "raw_text": "",
+  "injection_signals": []
+}

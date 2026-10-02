@@ -1,0 +1,24 @@
+{
+  "workflow": "AP_INVOICE_TO_PAY",
+  "scope": {
+    "inbox": "data/batch_b",
+    "vendors_include": [
+      "V1",
+      "V2"
+    ],
+    "vendors_exclude": [],
+    "date_from": null,
+    "date_to": null
+  },
+  "actions": {
+    "enter_bills": true,
+    "schedule_payments": false
+  },
+  "authority": {
+    "auto_pay_max_paise": 5000000
+  },
+  "outputs": {
+    "proof_pack": true
+  },
+  "clarifications": []
+}

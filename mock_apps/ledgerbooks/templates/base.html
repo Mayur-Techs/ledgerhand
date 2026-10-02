@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}LedgerBooks Mock ERP{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        header { background-color: #003366; color: white; padding: 10px 20px; }
+        nav { background-color: #e0e0e0; padding: 10px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #333; }
+        .container { padding: 20px; }
+        table { border-collapse: collapse; width: 100%; background: white; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="date"], input[type="number"], select { width: 300px; padding: 5px; }
+        button, .btn { padding: 8px 15px; background: #003366; color: white; border: none; cursor: pointer; text-decoration: none;}
+        button:hover, .btn:hover { background: #0055a4; }
+        .error { color: red; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+    <header>
+        <h2>LedgerBooks ERP</h2>
+    </header>
+    {% if request.cookies.get("session_id") %}
+    <nav>
+        <a href="/vendors">Vendors</a>
+        <a href="/pos">Purchase Orders</a>
+        <a href="/bills">Bills</a>
+        <a href="/payments">Payments</a>
+        <a href="/logout">Logout</a>
+    </nav>
+    {% endif %}
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

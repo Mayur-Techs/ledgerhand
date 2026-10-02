@@ -1,0 +1,21 @@
+{
+  "id": "draft_rounding_ok",
+  "description": "draft rounding ok",
+  "draft": {
+    "vendor_gstin_text": "27AABCS1234A1Z5",
+    "vendor_name_text": "Sharma Traders",
+    "invoice_no_text": "draft_rounding_ok-001",
+    "invoice_date_text": "15/09/2026",
+    "po_no_text": "PO-2026-001",
+    "total_text": "\u20b910,000.50",
+    "total_confidence": 0.95,
+    "vendor_gstin_confidence": 0.95,
+    "invoice_no_confidence": 0.95,
+    "po_no_confidence": 0.95
+  },
+  "po_record": null,
+  "vendor_record": null,
+  "expected_bill": "ENTER",
+  "expected_pay": "AUTO",
+  "expected_reason": "OK_AUTO_PAY"
+}

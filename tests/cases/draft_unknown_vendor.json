@@ -1,0 +1,21 @@
+{
+  "id": "draft_unknown_vendor",
+  "description": "draft unknown vendor",
+  "draft": {
+    "vendor_gstin_text": "27AABCX9999Z1Z9",
+    "vendor_name_text": "Unlisted Enterprises",
+    "invoice_no_text": "draft_unknown_vendor-001",
+    "invoice_date_text": "15/09/2026",
+    "po_no_text": "PO-2026-001",
+    "total_text": "\u20b910,000.00",
+    "total_confidence": 0.95,
+    "vendor_gstin_confidence": 0.95,
+    "invoice_no_confidence": 0.95,
+    "po_no_confidence": 0.95
+  },
+  "po_record": null,
+  "vendor_record": null,
+  "expected_bill": "HOLD",
+  "expected_pay": "NONE",
+  "expected_reason": "HOLD_VENDOR_UNKNOWN"
+}

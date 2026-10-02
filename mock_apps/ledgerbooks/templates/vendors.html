@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Vendors - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Vendors Master</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Vendor ID</th>
+            <th>Name</th>
+            <th>GSTIN</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in vendors %}
+        <tr>
+            <td>{{ v.id }}</td>
+            <td>{{ v.name }}</td>
+            <td>{{ v.gstin }}</td>
+            <td><a href="/vendors/{{ v.id }}">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

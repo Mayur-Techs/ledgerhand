@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ledgerhand Dashboard</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .panel { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        .badge.running { background: #d4edda; color: #155724; }
+        .badge.paused { background: #fff3cd; color: #856404; }
+        .badge.stopped { background: #f8d7da; color: #721c24; }
+        .badge.finished { background: #cce5ff; color: #004085; }
+        .approval-card { border: 1px solid #007bff; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; }
+        .preset-btn { margin-right: 5px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Ledgerhand Dashboard</h1>
+
+    <div class="panel">
+        <h3>Presets</h3>
+        <button class="preset-btn" onclick="loadPreset('baseline_a')">Baseline goal (Batch A)</button>
+        <button class="preset-btn" onclick="loadPreset('variation_b')">Variation goal (Batch B)</button>
+        <button class="preset-btn" onclick="document.getElementById('goal').value += ' Arm timeout_after_commit'">Arm timeout_after_commit</button>
+        <button class="preset-btn" onclick="document.getElementById('goal').value += ' Toggle ERP uniqueness'">Toggle ERP uniqueness</button>
+    </div>
+
+    <div class="panel">
+        <h3>Goal</h3>
+        <form method="post" action="/goal" id="goal-form">
+            <textarea id="goal" name="goal_text" rows="4" style="width:100%;"></textarea><br>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="spec-editor" style="display:none; margin-top: 10px;">
+            <h4>Spec JSON</h4>
+            <textarea id="spec-json" rows="6" style="width:100%;"></textarea><br>
+            <button onclick="confirmSpec()">Confirm Spec</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>Run Status: <span id="run-status" class="badge">NONE</span></h3>
+        <button onclick="sendCommand('pause')">Pause</button>
+        <button onclick="sendCommand('resume')">Resume</button>
+        <button onclick="sendCommand('stop')">Stop</button>
+    </div>
+
+    <div class="panel">
+        <h3>Tasks</h3>
+        <table id="tasks-table">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Reason Code</th>
+                    <th>Bill Decision</th>
+                    <th>Pay Decision</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h3>Pending Approvals</h3>
+        <div id="approvals-container"></div>
+    </div>
+
+    <div class="panel" style="display:flex; gap: 20px;">
+        <div style="flex: 1;">
+            <h3>Events Log</h3>
+            <div id="events-log" class="log"></div>
+        </div>
+        <div style="flex: 1;">
+            <h3>Screenshot</h3>
+            <img id="screenshot" style="max-width: 100%; border: 1px solid #ccc; min-height: 200px;" />
+        </div>
+    </div>
+
+    <script>
+        let currentRunId = null;
+
+        async function loadPreset(name) {
+            const res = await fetch(`/presets/${name}`, { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('goal').value = data.goal_text;
+        }
+
+        async function sendCommand(kind) {
+            if (!currentRunId) return;
+            await fetch('/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ run_id: currentRunId, kind: kind })
+            });
+            pollStatus();
+        }
+
+        async function approve(id) {
+            await fetch(`/approve/${id}`, { method: 'POST' });
+            pollStatus();
+        }
+
+        async function reject(id) {
+            await fetch(`/reject/${id}`, { method: 'POST' });
+            pollStatus();
+        }
+
+        async function confirmSpec() {
+            const spec = document.getElementById('spec-json').value;
+            await fetch(`/runs/${currentRunId}/spec`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ spec_json: spec })
+            });
+            document.getElementById('spec-editor').style.display = 'none';
+        }
+
+        async function pollStatus() {
+            const res = await fetch('/status');
+            const data = await res.json();
+            
+            if (data.run_id) currentRunId = data.run_id;
+            
+            const badge = document.getElementById('run-status');
+            badge.textContent = data.run_status;
+            badge.className = 'badge ' + data.run_status.toLowerCase();
+            
+            const tbody = document.querySelector('#tasks-table tbody');
+            tbody.innerHTML = '';
+            for (const t of data.tasks) {
+                tbody.innerHTML += `<tr>
+                    <td>${t.file}</td>
+                    <td>${t.status}</td>
+                    <td>${t.reason_code}</td>
+                    <td>${t.bill_decision}</td>
+                    <td>${t.pay_decision}</td>
+                </tr>`;
+            }
+
+            const appContainer = document.getElementById('approvals-container');
+            appContainer.innerHTML = '';
+            for (const a of data.approvals) {
+                appContainer.innerHTML += `<div class="approval-card">
+                    <strong>Task:</strong> ${a.task_id} <br>
+                    <strong>Payload:</strong> <pre>${JSON.stringify(a.payload, null, 2)}</pre>
+                    <button onclick="approve(${a.id})">Approve</button>
+                    <button onclick="reject(${a.id})">Reject</button>
+                </div>`;
+            }
+
+            const log = document.getElementById('events-log');
+            log.innerHTML = '';
+            for (const e of data.events) {
+                log.innerHTML += `<div>[${e.ts}] <b>${e.kind}</b> - ${JSON.stringify(e.payload)}</div>`;
+            }
+
+            if (currentRunId) {
+                document.getElementById('screenshot').src = `/screenshot/${currentRunId}?t=${new Date().getTime()}`;
+            }
+        }
+
+        setInterval(pollStatus, 2000);
+        pollStatus();
+    </script>
+</body>
+</html>

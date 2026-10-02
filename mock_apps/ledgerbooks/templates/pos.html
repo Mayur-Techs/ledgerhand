@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Purchase Orders - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Purchase Orders</h3>
+<table>
+    <thead>
+        <tr>
+            <th>PO No</th>
+            <th>Vendor ID</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pos %}
+        <tr>
+            <td>{{ p.po_no }}</td>
+            <td>{{ p.vendor_id }}</td>
+            <td>{{ p.status }}</td>
+            <td><a href="/pos/{{ p.po_no }}">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

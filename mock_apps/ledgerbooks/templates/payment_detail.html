@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Payment Detail - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Payment: {{ payment.id }}</h3>
+<p><strong>Bill ID:</strong> <a href="/bills/{{ payment.bill_id }}">{{ payment.bill_id }}</a></p>
+<p><strong>Invoice No:</strong> {{ payment.invoice_no }}</p>
+<p><strong>Vendor Name:</strong> {{ payment.vendor_name }}</p>
+<p><strong>Amount (Paise):</strong> {{ payment.amount_paise }}</p>
+<p><strong>Pay Date:</strong> {{ payment.pay_date }}</p>
+<p><strong>Payee Account ID:</strong> {{ payment.payee_account_id }}</p>
+<p><strong>Company Account ID:</strong> {{ payment.company_account_id }}</p>
+<p><strong>Batch Ref:</strong> {{ payment.batch_ref }}</p>
+<p><strong>Status:</strong> {{ payment.status }}</p>
+
+<a href="/payments">Back to Payments</a>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Bill Detail - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Bill: {{ bill.id }}</h3>
+<p><strong>Vendor Name:</strong> <a href="/vendors/{{ bill.vendor_id }}">{{ bill.vendor_name }}</a></p>
+<p><strong>Invoice No:</strong> {{ bill.invoice_no }}</p>
+<p><strong>Invoice Date:</strong> {{ bill.invoice_date }}</p>
+<p><strong>PO No:</strong> {{ bill.po_no }}</p>
+<p><strong>Internal Ref:</strong> {{ bill.internal_ref }}</p>
+<p><strong>Currency:</strong> {{ bill.currency }}</p>
+<p><strong>Total:</strong> {{ "%.2f"|format(bill.total_paise / 100) }}</p>
+<p><strong>Status:</strong> {{ bill.status }}</p>
+
+<h4>Lines</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Rate (Paise)</th>
+            <th>Amount (Paise)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for l in lines %}
+        <tr>
+            <td>{{ l.description }}</td>
+            <td>{{ l.qty }}</td>
+            <td>{{ l.rate_paise }}</td>
+            <td>{{ l.amount_paise }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="/bills">Back to Bills</a>
+{% endblock %}

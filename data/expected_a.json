@@ -1,0 +1,82 @@
+[
+  {
+    "file": "batch_a/A01.pdf",
+    "vendor": "V1",
+    "invoice_no": "INV2026001",
+    "bill_decision": "ENTER",
+    "pay_decision": "AUTO",
+    "reason_code": "OK_AUTO_PAY"
+  },
+  {
+    "file": "batch_a/A02.pdf",
+    "vendor": "V2",
+    "invoice_no": "INV2026002",
+    "bill_decision": "ENTER",
+    "pay_decision": "AUTO",
+    "reason_code": "OK_AUTO_PAY"
+  },
+  {
+    "file": "batch_a/A03.pdf",
+    "vendor": "V3",
+    "invoice_no": "INV2026003",
+    "bill_decision": "ENTER",
+    "pay_decision": "APPROVE",
+    "reason_code": "OK_APPROVE_PAY"
+  },
+  {
+    "file": "batch_a/A04.pdf",
+    "vendor": "V4",
+    "invoice_no": "INV2025DUP",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  },
+  {
+    "file": "batch_a/A05.pdf",
+    "vendor": "V4",
+    "invoice_no": "INV2025DUP",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  },
+  {
+    "file": "batch_a/A06.pdf",
+    "vendor": "V1",
+    "invoice_no": "INV2026006",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  },
+  {
+    "file": "batch_a/A07.pdf",
+    "vendor": "V2",
+    "invoice_no": "INV2026007",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  },
+  {
+    "file": "batch_a/A08.pdf",
+    "vendor": "V5",
+    "invoice_no": "INV2026008",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  },
+  {
+    "file": "batch_a/A09.pdf",
+    "vendor": "V6",
+    "invoice_no": "INV2026009",
+    "bill_decision": "QUARANTINE",
+    "pay_decision": "NONE",
+    "reason_code": "QUARANTINE_INJECTION"
+  },
+  {
+    "file": "batch_a/A10.pdf",
+    "vendor": "V6",
+    "invoice_no": "INV2026010",
+    "bill_decision": "HOLD",
+    "pay_decision": "NONE",
+    "reason_code": "HOLD_..."
+  }
+]

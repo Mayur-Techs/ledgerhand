@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vendor Detail - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Vendor: {{ vendor.name }}</h3>
+<p><strong>ID:</strong> {{ vendor.id }}</p>
+<p><strong>GSTIN:</strong> {{ vendor.gstin }}</p>
+
+<h4>Bank Accounts</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Bank Name</th>
+            <th>Account Number</th>
+            <th>Default</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for acc in accounts %}
+        <tr>
+            <td>{{ acc.bank_name }}</td>
+            <td>{{ acc.account_number }}</td>
+            <td>{% if acc.is_default %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="/vendors">Back to Vendors</a>
+{% endblock %}

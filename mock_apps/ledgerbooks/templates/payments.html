@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Payments - LedgerBooks{% endblock %}
+{% block content %}
+<h3>Payments</h3>
+<a href="/payments/new" class="btn" style="margin-bottom: 20px; display: inline-block;">New Payment</a>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Bill ID</th>
+            <th>Invoice No</th>
+            <th>Vendor Name</th>
+            <th>Amount (Paise)</th>
+            <th>Pay Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in payments %}
+        <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.bill_id }}</td>
+            <td>{{ p.invoice_no }}</td>
+            <td>{{ p.vendor_name }}</td>
+            <td>{{ p.amount_paise }}</td>
+            <td>{{ p.pay_date }}</td>
+            <td>{{ p.status }}</td>
+            <td><a href="/payments/{{ p.id }}">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
