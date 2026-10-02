@@ -55,7 +55,7 @@ def get_ledger_conn():
 
 @app.get("/")
 def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "presets": PRESETS})
+    return templates.TemplateResponse(request, "index.html", {"request": request, "presets": PRESETS})
 
 @app.post("/goal")
 async def submit_goal(request: Request, goal_text: str = Form(...),

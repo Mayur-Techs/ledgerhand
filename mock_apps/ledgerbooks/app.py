@@ -65,7 +65,7 @@ def require_auth(session_id: Optional[str] = Depends(get_session)):
 # ----------------
 @app.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "csrf_token": "fake_csrf"})
+    return templates.TemplateResponse(request, "login.html", {"request": request, "csrf_token": "fake_csrf"})
 
 @app.post("/login")
 def login_post(
@@ -94,27 +94,27 @@ def logout(response: Response):
 def vendors_list(request: Request, _=Depends(require_auth)):
     conn = get_db()
     vendors = conn.execute("SELECT * FROM vendors").fetchall()
-    return templates.TemplateResponse("vendors.html", {"request": request, "vendors": vendors})
+    return templates.TemplateResponse(request, "vendors.html", {"request": request, "vendors": vendors})
 
 @app.get("/vendors/{id}", response_class=HTMLResponse)
 def vendor_detail(request: Request, id: str, _=Depends(require_auth)):
     conn = get_db()
     vendor = conn.execute("SELECT * FROM vendors WHERE id=?", (id,)).fetchone()
     accounts = conn.execute("SELECT * FROM vendor_accounts WHERE vendor_id=?", (id,)).fetchall()
-    return templates.TemplateResponse("vendor_detail.html", {"request": request, "vendor": vendor, "accounts": accounts})
+    return templates.TemplateResponse(request, "vendor_detail.html", {"request": request, "vendor": vendor, "accounts": accounts})
 
 @app.get("/pos", response_class=HTMLResponse)
 def pos_list(request: Request, _=Depends(require_auth)):
     conn = get_db()
     pos = conn.execute("SELECT * FROM pos").fetchall()
-    return templates.TemplateResponse("pos.html", {"request": request, "pos": pos})
+    return templates.TemplateResponse(request, "pos.html", {"request": request, "pos": pos})
 
 @app.get("/pos/{po_no}", response_class=HTMLResponse)
 def po_detail(request: Request, po_no: str, _=Depends(require_auth)):
     conn = get_db()
     po = conn.execute("SELECT * FROM pos WHERE po_no=?", (po_no,)).fetchone()
     lines = conn.execute("SELECT * FROM po_lines WHERE po_no=?", (po_no,)).fetchall()
-    return templates.TemplateResponse("po_detail.html", {"request": request, "po": po, "lines": lines})
+    return templates.TemplateResponse(request, "po_detail.html", {"request": request, "po": po, "lines": lines})
 
 @app.get("/bills", response_class=HTMLResponse)
 def bills_list(request: Request, q: str = "", vendor: str = "", page: int = 1, _=Depends(require_auth)):
@@ -152,7 +152,7 @@ def bills_list(request: Request, q: str = "", vendor: str = "", page: int = 1, _
     count_params = params[:-2]
     total = conn.execute(count_query, count_params).fetchone()['c']
     
-    return templates.TemplateResponse("bills.html", {
+    return templates.TemplateResponse(request, "bills.html", {
         "request": request, 
         "bills": bills, 
         "page": page,
@@ -170,7 +170,7 @@ def bill_new_get(request: Request, _=Depends(require_auth)):
     if check_fault("ui_drift"):
         ui_variant = "v2"
         
-    return templates.TemplateResponse("bill_new.html", {
+    return templates.TemplateResponse(request, "bill_new.html", {
         "request": request, 
         "vendors": vendors, 
         "accounts": accounts,
@@ -242,7 +242,7 @@ def bill_detail(request: Request, id: str, _=Depends(require_auth)):
     conn = get_db()
     bill = conn.execute("SELECT b.*, v.name as vendor_name FROM bills b JOIN vendors v ON b.vendor_id = v.id WHERE b.id=?", (id,)).fetchone()
     lines = conn.execute("SELECT * FROM bill_lines WHERE bill_id=?", (id,)).fetchall()
-    return templates.TemplateResponse("bill_detail.html", {"request": request, "bill": bill, "lines": lines})
+    return templates.TemplateResponse(request, "bill_detail.html", {"request": request, "bill": bill, "lines": lines})
 
 @app.get("/payments/new", response_class=HTMLResponse)
 def payment_new_get(request: Request, _=Depends(require_auth)):
@@ -250,7 +250,7 @@ def payment_new_get(request: Request, _=Depends(require_auth)):
     bills = conn.execute("SELECT b.*, v.name as vendor_name FROM bills b JOIN vendors v ON b.vendor_id = v.id WHERE b.status='Posted'").fetchall()
     company_accounts = conn.execute("SELECT * FROM company_accounts").fetchall()
     vendor_accounts = conn.execute("SELECT * FROM vendor_accounts").fetchall()
-    return templates.TemplateResponse("payment_new.html", {
+    return templates.TemplateResponse(request, "payment_new.html", {
         "request": request, 
         "bills": bills, 
         "company_accounts": company_accounts,
@@ -308,7 +308,7 @@ def payments_list(request: Request, _=Depends(require_auth)):
         JOIN vendors v ON b.vendor_id = v.id
         ORDER BY p.pay_date DESC
     """).fetchall()
-    return templates.TemplateResponse("payments.html", {"request": request, "payments": payments})
+    return templates.TemplateResponse(request, "payments.html", {"request": request, "payments": payments})
 
 @app.get("/payments/{id}", response_class=HTMLResponse)
 def payment_detail(request: Request, id: str, _=Depends(require_auth)):
@@ -320,13 +320,13 @@ def payment_detail(request: Request, id: str, _=Depends(require_auth)):
         JOIN vendors v ON b.vendor_id = v.id
         WHERE p.id=?
     """, (id,)).fetchone()
-    return templates.TemplateResponse("payment_detail.html", {"request": request, "payment": payment})
+    return templates.TemplateResponse(request, "payment_detail.html", {"request": request, "payment": payment})
 
 @app.get("/admin/chaos", response_class=HTMLResponse)
 def admin_chaos_get(request: Request):
     conn = get_db()
     flags = conn.execute("SELECT * FROM chaos_flags").fetchall()
-    return templates.TemplateResponse("admin_chaos.html", {"request": request, "flags": flags, "enforce_unique": ENFORCE_UNIQUE})
+    return templates.TemplateResponse(request, "admin_chaos.html", {"request": request, "flags": flags, "enforce_unique": ENFORCE_UNIQUE})
 
 class ChaosArm(BaseModel):
     name: str
