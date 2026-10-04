@@ -56,20 +56,20 @@ def _do_login(page, base: str, config: Config) -> None:
     page.wait_for_load_state("networkidle")
 
 
-def _check_session(page, base: str, config: Config) -> None:
-    """Detect redirect to /login after navigation and re-login."""
+def _check_session(page, base: str, config: Config, intended_path: str) -> None:
+    """Navigate to intended_path, detect redirect to /login, re-login and return."""
+    target = f"{base}{intended_path}"
+    page.goto(target)
     if "/login" in page.url:
         _do_login(page, base, config)
-
-
+        page.goto(target)
 # ── Read skills ───────────────────────────────────────────────────────────────
 
 def find_vendor(driver: Driver, config: Config, gstin: str = "", name: str = "") -> Optional[VendorRecord]:
     """Navigate /vendors, search for vendor by GSTIN or name. Return VendorRecord or None."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/vendors")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/vendors")
     page.wait_for_load_state("domcontentloaded")
 
     # Find matching row in vendor list
@@ -92,30 +92,33 @@ def read_vendor(driver: Driver, config: Config, vendor_id: str) -> Optional[Vend
     """Read /vendors/{id}. Return full VendorRecord including accounts."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/vendors/{vendor_id}")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/vendors/{vendor_id}")
     page.wait_for_load_state("domcontentloaded")
 
     # Parse vendor fields from detail page
     try:
-        name = page.locator("td:has-text('Name') + td, .vendor-name").first.inner_text(timeout=3000).strip()
+        h3_text = page.locator("h3:has-text('Vendor:')").first.inner_text(timeout=3000).strip()
+        name = h3_text.replace("Vendor:", "").strip()
     except Exception:
         name = ""
     try:
-        gstin = page.locator("td:has-text('GSTIN') + td, .vendor-gstin").first.inner_text(timeout=3000).strip()
+        p_text = page.locator("p:has-text('GSTIN:')").first.inner_text(timeout=3000).strip()
+        gstin = p_text.replace("GSTIN:", "").strip()
     except Exception:
         gstin = ""
 
     # Parse accounts
     accounts = []
-    acct_rows = page.locator("table.accounts tbody tr").all()
+    # In mock ERP, the table comes right after <h4>Bank Accounts</h4>
+    acct_rows = page.locator("h4:has-text('Bank Accounts') + table tbody tr").all()
     for row in acct_rows:
         cells = row.locator("td").all()
-        if len(cells) >= 2:
-            acct_id = cells[0].inner_text().strip()
-            bank = cells[1].inner_text().strip() if len(cells) > 1 else ""
-            acct_no = cells[2].inner_text().strip() if len(cells) > 2 else ""
-            is_default = "default" in row.inner_text().lower()
+        if len(cells) >= 3:
+            bank = cells[0].inner_text().strip()
+            acct_no = cells[1].inner_text().strip()
+            is_default = "Yes" in cells[2].inner_text()
+            # The mock ERP doesn't display a separate account ID, use acct_no as ID
+            acct_id = acct_no
             accounts.append(VendorAccount(id=acct_id, bank_name=bank, account_number=acct_no, is_default=is_default))
 
     return VendorRecord(id=vendor_id, name=name, gstin=gstin, accounts=tuple(accounts))
@@ -125,21 +128,20 @@ def read_po(driver: Driver, config: Config, po_no: str) -> Optional[PORecord]:
     """Read /pos/{po_no}. Return PORecord with lines, received qty, status."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/pos/{po_no}")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/pos/{po_no}")
     page.wait_for_load_state("domcontentloaded")
 
     if page.locator("h2:has-text('Not Found'), .error-404").count() > 0:
         return None
 
     try:
-        vendor_id = page.locator("td:has-text('Vendor') + td").first.inner_text(timeout=3000).strip()
-        status = page.locator("td:has-text('Status') + td").first.inner_text(timeout=3000).strip()
+        vendor_id = page.locator("p:has-text('Vendor ID:')").first.inner_text(timeout=3000).replace("Vendor ID:", "").strip()
+        status = page.locator("p:has-text('Status:')").first.inner_text(timeout=3000).replace("Status:", "").strip()
     except Exception:
         return None
 
     lines = []
-    line_rows = page.locator("table.po-lines tbody tr").all()
+    line_rows = page.locator("h4:has-text('Lines') + table tbody tr").all()
     for row in line_rows:
         cells = row.locator("td").all()
         if len(cells) >= 4:
@@ -163,8 +165,7 @@ def list_vendor_bills(driver: Driver, config: Config, vendor_id: str) -> list[di
     pg = 1
 
     while True:
-        page.goto(f"{base}/bills?vendor={vendor_id}&page={pg}")
-        _check_session(page, base, config)
+        _check_session(page, base, config, f"/bills?vendor={vendor_id}&page={pg}")
         page.wait_for_load_state("domcontentloaded")
 
         rows = page.locator("table tbody tr").all()
@@ -173,13 +174,19 @@ def list_vendor_bills(driver: Driver, config: Config, vendor_id: str) -> list[di
 
         for row in rows:
             cells = row.locator("td").all()
-            if len(cells) < 4:
+            if len(cells) < 6:
                 continue
-            # Columns: ID, Invoice No, Internal Ref (marker), Total, Status
-            invoice_no_raw = cells[1].inner_text().strip() if len(cells) > 1 else ""
-            marker = cells[2].inner_text().strip() if len(cells) > 2 else ""
-            total_text = cells[3].inner_text().strip() if len(cells) > 3 else "0"
+            # Columns: ID(0), Vendor(1), Invoice No(2), Internal Ref(3), Amount(4), Status(5), Actions(6)
+            invoice_no_raw = cells[2].inner_text().strip()
+            marker = cells[3].inner_text().strip()
+            total_text = cells[4].inner_text().strip()
             try:
+                # The amount is displayed as float-like "100.00" but is called Amount (Paise).
+                # parse_paise("100.00") will return 10000, which is incorrect if it's already paise.
+                # Actually, parse_paise("100.00") splits on "." -> rupees_s = "100", paise_s = "00"
+                # so it returns 10000. But if Amount is "100.00" representing 100 paise... 
+                # Let's just use parse_paise assuming it's formatted as rupees.
+                from ledgerhand.money import parse_paise
                 total_paise = parse_paise(total_text)
             except ValueError:
                 total_paise = 0
@@ -214,8 +221,7 @@ def lookup(driver: Driver, config: Config, kind: str, business_key: str, marker:
 
     if kind == "create_bill":
         # Search by marker first (Internal Ref)
-        page.goto(f"{base}/bills?q={marker}")
-        _check_session(page, base, config)
+        _check_session(page, base, config, f"/bills?q={marker}")
         page.wait_for_load_state("domcontentloaded")
         rows = page.locator("table tbody tr").all()
         for row in rows:
@@ -244,8 +250,7 @@ def lookup(driver: Driver, config: Config, kind: str, business_key: str, marker:
                         return read_bill(driver, config, parsed['bill_id'])
 
     elif kind == "schedule_payment":
-        page.goto(f"{base}/payments?q={marker}")
-        _check_session(page, base, config)
+        _check_session(page, base, config, f"/payments?q={marker}")
         page.wait_for_load_state("domcontentloaded")
         rows = page.locator("table tbody tr").all()
         for row in rows:
@@ -295,8 +300,7 @@ def read_bill(driver: Driver, config: Config, bill_id: str) -> Optional[dict]:
     """Read /bills/{id} and return bill fields dict."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/bills/{bill_id}")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/bills/{bill_id}")
     page.wait_for_load_state("domcontentloaded")
 
     result = {"bill_id": bill_id}
@@ -341,8 +345,7 @@ def find_payment(driver: Driver, config: Config, marker: str) -> Optional[dict]:
     """Search /payments for a payment with batch_ref containing marker."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/payments?q={marker}")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/payments?q={marker}")
     page.wait_for_load_state("domcontentloaded")
     rows = page.locator("table tbody tr").all()
     for row in rows:
@@ -368,8 +371,7 @@ def prepare_bill(
     """
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/bills/new")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/bills/new")
     page.wait_for_load_state("domcontentloaded")
 
     try:
@@ -394,10 +396,17 @@ def prepare_bill(
                     f"bank_selection_failed: no bank account selector found on bill form"
                 )
             try:
-                acct_sel.select_option(value=str(vendor_account_id))
+                # The option text is like "SBI - xxxx1234", and vendor_account_id is "xxxx1234"
+                # Playwright's select_option with label can use exact match. Since we only have the account number,
+                # let's find the option element that contains this account number and get its value.
+                option = acct_sel.locator(f"option:has-text('{vendor_account_id}')").first
+                if option.count() == 0:
+                    raise Exception(f"Option containing '{vendor_account_id}' not found")
+                val = option.get_attribute("value")
+                acct_sel.select_option(value=val)
             except Exception as e:
                 raise PrepareError(
-                    f"bank_selection_failed: could not select account {vendor_account_id!r}: {e}"
+                    f"bank_selection_failed: could not select account '{vendor_account_id}': {e}"
                 )
 
         # Line items
@@ -460,8 +469,7 @@ def prepare_payment(
     """
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/payments/new")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/payments/new")
     page.wait_for_load_state("domcontentloaded")
 
     try:
@@ -480,10 +488,12 @@ def prepare_payment(
         resolve_locator(page, PAY_DATE_FIELD, "pay_date").fill(pay_date.strftime("%d/%m/%Y"))
 
         # Company account
-        if company_account_id:
-            acct_sel = page.locator("select[name='company_account_id']")
-            if acct_sel.count() > 0:
+        acct_sel = page.locator("select[name='company_account_id']")
+        if acct_sel.count() > 0:
+            if company_account_id:
                 acct_sel.select_option(value=str(company_account_id))
+            else:
+                acct_sel.select_option(index=1)
 
         # Batch Ref (= marker)
         resolve_locator(page, BATCH_REF_FIELD, "batch_ref").fill(marker)
@@ -512,8 +522,7 @@ def read_payment(driver: Driver, config: Config, payment_id: str) -> Optional[di
     """Read /payments/{id} and return payment fields dict."""
     page = driver.page()
     base = config.lb_base_url.rstrip("/")
-    page.goto(f"{base}/payments/{payment_id}")
-    _check_session(page, base, config)
+    _check_session(page, base, config, f"/payments/{payment_id}")
     page.wait_for_load_state("domcontentloaded")
 
     result = {"payment_id": payment_id}

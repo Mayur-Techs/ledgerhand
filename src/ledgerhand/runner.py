@@ -220,7 +220,7 @@ class Runner:
                         vendor_account_id = acct.id
 
                 bill_params = {
-                    "draft": draft,
+                    "draft": draft.model_dump(),
                     "vendor_id": parsed.vendor_id or "",
                     "invoice_no": parsed.invoice_no,
                     "invoice_date": str(parsed.invoice_date),
@@ -273,12 +273,12 @@ class Runner:
     def _lookup_vendor(self, gstin: str) -> Optional[VendorRecord]:
         """Read vendor master from ERP by GSTIN."""
         try:
-            from ledgerhand.browser.skills import find_vendor, read_vendor
-            vendor_id = find_vendor(self.driver, self.config, gstin)
-            if vendor_id:
-                return read_vendor(self.driver, self.config, vendor_id)
-        except Exception:
-            pass
+            from ledgerhand.browser.skills import find_vendor
+            return find_vendor(self.driver, self.config, gstin)
+        except Exception as e:
+            print(f"[debug] Exception in _lookup_vendor: {e}")
+            import traceback
+            traceback.print_exc()
         return None
 
     def _lookup_po(self, po_no: str) -> Optional[PORecord]:

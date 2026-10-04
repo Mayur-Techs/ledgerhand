@@ -1,0 +1,17 @@
+{
+  "workflow": "AP_INVOICE_TO_PAY",
+  "scope": {
+    "inbox": "batch_a/A01.pdf"
+  },
+  "actions": {
+    "enter_bills": true,
+    "schedule_payments": true
+  },
+  "authority": {
+    "auto_pay_max_paise": 5000000
+  },
+  "outputs": {
+    "proof_pack": true
+  },
+  "clarifications": []
+}

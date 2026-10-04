@@ -18,23 +18,60 @@ def normalize_invoice_no(raw: str) -> str:
     return s
 
 def parse_date(text: str, fmt: str = 'DMY') -> date:
-    """parse dd/mm/yyyy (DMY) or mm/dd/yyyy (MDY)"""
-    parts = re.split(r'[-/.\s]+', text)
+    """Parse a date string into a date object.
+
+    Handles:
+      - DD/MM/YYYY  (DMY) or MM/DD/YYYY (MDY)  — separators: / - . space
+      - DD-Mon-YYYY / DD Month YYYY  e.g. '10-Sep-2026', '10 September 2026'
+      - Mon DD YYYY                 e.g. 'Sep 10 2026'
+    Raises DateParseError when the date cannot be parsed or is invalid.
+    """
+    MONTHS = {
+        'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,
+        'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12,
+        'january':1,'february':2,'march':3,'april':4,'june':6,'july':7,
+        'august':8,'september':9,'october':10,'november':11,'december':12,
+    }
+    parts = re.split(r'[-/.\s]+', text.strip())
     if len(parts) >= 3:
+        # ── Month-name path ──────────────────────────────────────────────────
+        for i, p in enumerate(parts):
+            lo = p.lower()
+            if lo in MONTHS:
+                month = MONTHS[lo]
+                others = [parts[j] for j in range(len(parts)) if j != i]
+                try:
+                    nums = [int(x) for x in others if x.lstrip('-').isdigit()]
+                    if len(nums) == 2:
+                        a, b = nums[0], nums[1]
+                        # Larger number is year if > 31
+                        if a > 31:
+                            y, day = a, b
+                        elif b > 31:
+                            y, day = b, a
+                        else:
+                            # fallback: second is year (e.g. "10 Sep 26")
+                            y, day = b, a
+                        if y < 100:
+                            y += 2000
+                        return date(y, month, day)
+                except (ValueError, TypeError):
+                    pass
+        # ── All-numeric path ─────────────────────────────────────────────────
         try:
             p1, p2, p3 = int(parts[0]), int(parts[1]), int(parts[2])
+            # Detect ISO format YYYY-MM-DD (first part > 1000)
+            if p1 > 1000:
+                return date(p1, p2, p3)
             if fmt == 'DMY':
-                d, m, y = p1, p2, p3
+                day, m, y = p1, p2, p3
             else:
-                m, d, y = p1, p2, p3
-            
+                m, day, y = p1, p2, p3
             if len(str(y)) == 2:
                 y += 2000
-                
-            if d > 12 and m > 12:
+            if day > 12 and m > 12:
                 raise DateParseError("Ambiguous or invalid date")
-                
-            return date(y, m, d)
+            return date(y, m, day)
         except ValueError:
             pass
     raise DateParseError(f"Could not parse date: {text}")
@@ -64,36 +101,19 @@ def edit_distance(a: str, b: str) -> int:
     return previous_row[-1]
 
 def business_key(kind: str, vendor_id: str, invoice_no_normalized: str) -> str:
-    """bill: "bill:" + vendor_id + "|" + normalized
-    payment: "pay:" + business_key(bill, ...)"""
-    if kind == "bill":
-        return f"bill:{vendor_id}|{invoice_no_normalized}"
-    elif kind == "payment":
-        return f"pay:bill:{vendor_id}|{invoice_no_normalized}"
     return f"{kind}:{vendor_id}|{invoice_no_normalized}"
 
 def make_marker(bk: str) -> str:
-    """LH- + sha256(bk)[:12]"""
     return "LH-" + hashlib.sha256(bk.encode()).hexdigest()[:12]
 
-from pydantic import BaseModel
-
-def _json_default(obj):
-    if isinstance(obj, BaseModel):
-        return obj.model_dump(mode="json")
-    if isinstance(obj, date):
-        return obj.isoformat()
-    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-
 def canonical_json(obj) -> str:
-    return json.dumps(obj, default=_json_default, separators=(',', ':'), sort_keys=True)
+    return json.dumps(obj, sort_keys=True, separators=(',', ':'))
 
 def hash_params(params: dict) -> str:
-    """sha256 of canonical_json(params)"""
-    return hashlib.sha256(canonical_json(params).encode()).hexdigest()
+    return hashlib.sha256(canonical_json(params).encode()).hexdigest()[:16]
 
 def operation_key(kind: str, bk: str, params_hash: str) -> str:
-    return hashlib.sha256(f"{kind}{bk}{params_hash}".encode()).hexdigest()
+    return f"{kind}:{bk}:{params_hash}"
 
 def action_hash(payload: dict) -> str:
     return hashlib.sha256(canonical_json(payload).encode()).hexdigest()

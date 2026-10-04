@@ -1,170 +1,582 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Ledgerhand Dashboard</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .panel { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .badge.running { background: #d4edda; color: #155724; }
-        .badge.paused { background: #fff3cd; color: #856404; }
-        .badge.stopped { background: #f8d7da; color: #721c24; }
-        .badge.finished { background: #cce5ff; color: #004085; }
-        .approval-card { border: 1px solid #007bff; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-        .log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; }
-        .preset-btn { margin-right: 5px; margin-bottom: 5px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ledgerhand — Operator Dashboard</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --border:   #2a2d3a;
+      --accent:   #4f8ef7;
+      --green:    #22c55e;
+      --yellow:   #f59e0b;
+      --red:      #ef4444;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --mono:     'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    html { font-size: 14px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    header .tagline { color: var(--muted); font-size: 0.85rem; }
+    #status-badge {
+      margin-left: auto;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 0;
+      height: calc(100vh - 57px);
+    }
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Card / Section ── */
+    .card {
+      border-bottom: 1px solid var(--border);
+      padding: 18px;
+    }
+    .card h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Buttons ── */
+    button, .btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:hover { opacity: 0.85; }
+    button:active { transform: scale(0.97); }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-success  { background: var(--green);  color: #000; }
+    .btn-danger   { background: var(--red);    color: #fff; }
+    .btn-warning  { background: var(--yellow); color: #000; }
+    .btn-ghost    { background: var(--border); color: var(--text); }
+    .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+
+    /* ── Goal form ── */
+    textarea, input[type=text] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 10px;
+      font-size: 0.85rem;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+    }
+    textarea:focus, input[type=text]:focus { border-color: var(--accent); }
+
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .preset-chip {
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--border);
+      color: var(--text);
+      font-size: 0.78rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .preset-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Status colours ── */
+    .s-none     { background: var(--border); color: var(--muted); }
+    .s-running  { background: #164e30; color: var(--green); }
+    .s-paused   { background: #3d2e05; color: var(--yellow); }
+    .s-stopped  { background: #3d1010; color: var(--red); }
+    .s-finished { background: #0d2a4e; color: var(--accent); }
+
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+    /* ── Tasks table ── */
+    .tasks-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th {
+      background: var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(79,142,247,0.04); }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pill-green  { background: #164e30; color: var(--green); }
+    .pill-yellow { background: #3d2e05; color: var(--yellow); }
+    .pill-red    { background: #3d1010; color: var(--red); }
+    .pill-blue   { background: #0d2a4e; color: var(--accent); }
+    .pill-gray   { background: var(--border); color: var(--muted); }
+
+    /* ── Approvals ── */
+    .approval-card {
+      border: 1px solid var(--yellow);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: rgba(245,158,11,0.06);
+    }
+    .approval-card h3 { font-size: 0.85rem; color: var(--yellow); margin-bottom: 8px; }
+    .approval-card pre {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      background: var(--bg);
+      padding: 8px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .approval-actions { display: flex; gap: 8px; }
+    #no-approvals { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+    /* ── Events log + tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 10px 18px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-content { display: none; flex: 1; overflow: hidden; }
+    .tab-content.active { display: flex; flex-direction: column; }
+
+    #events-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+    .event-row { display: flex; gap: 10px; padding: 2px 0; }
+    .event-ts   { color: var(--muted); flex-shrink: 0; }
+    .event-kind { font-weight: 700; flex-shrink: 0; min-width: 160px; }
+    .event-kind.ok       { color: var(--green); }
+    .event-kind.hold     { color: var(--yellow); }
+    .event-kind.error    { color: var(--red); }
+    .event-kind.info     { color: var(--accent); }
+    .event-detail { color: var(--muted); word-break: break-all; }
+
+    /* Tasks tab */
+    #tasks-tab-content { overflow-y: auto; flex: 1; }
+
+    /* Goal summary */
+    #goal-summary {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 10px;
+      display: none;
+    }
+    #goal-summary.visible { display: block; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 0.85rem;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 999;
+      max-width: 360px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: var(--green); }
+    #toast.error   { border-color: var(--red); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Spinner */
+    .spinner { display: inline-block; width: 10px; height: 10px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #run-info { color: var(--muted); font-size: 0.78rem; margin-top: 6px; }
+  </style>
 </head>
 <body>
-    <h1>Ledgerhand Dashboard</h1>
 
-    <div class="panel">
-        <h3>Presets</h3>
-        <button class="preset-btn" onclick="loadPreset('baseline_a')">Baseline goal (Batch A)</button>
-        <button class="preset-btn" onclick="loadPreset('variation_b')">Variation goal (Batch B)</button>
-        <button class="preset-btn" onclick="document.getElementById('goal').value += ' Arm timeout_after_commit'">Arm timeout_after_commit</button>
-        <button class="preset-btn" onclick="document.getElementById('goal').value += ' Toggle ERP uniqueness'">Toggle ERP uniqueness</button>
-    </div>
+<header>
+  <h1>⚡ Ledgerhand</h1>
+  <span class="tagline">AP Operator — model interprets, code decides</span>
+  <span id="status-badge" class="s-none">NO RUN</span>
+</header>
 
-    <div class="panel">
-        <h3>Goal</h3>
-        <form method="post" action="/goal" id="goal-form">
-            <textarea id="goal" name="goal_text" rows="4" style="width:100%;"></textarea><br>
-            <button type="submit">Submit</button>
-        </form>
-        <div id="spec-editor" style="display:none; margin-top: 10px;">
-            <h4>Spec JSON</h4>
-            <textarea id="spec-json" rows="6" style="width:100%;"></textarea><br>
-            <button onclick="confirmSpec()">Confirm Spec</button>
+<div class="grid">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+
+    <!-- Goal card -->
+    <div class="card">
+      <h2>Goal</h2>
+      <div class="presets" id="presets-row">
+        <span class="preset-chip" onclick="loadPreset('baseline_a')">📂 Batch A</span>
+        <span class="preset-chip" onclick="loadPreset('variation_b')">📂 Batch B (variation)</span>
+      </div>
+      <form id="goal-form" onsubmit="submitGoal(event)">
+        <textarea id="goal-input" rows="4" placeholder="Describe the task in plain English…"></textarea>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="submit" class="btn-primary" style="flex:1;">Submit Goal</button>
+          <button type="button" class="btn-ghost" onclick="clearGoal()">Clear</button>
         </div>
+      </form>
+      <div id="goal-summary"></div>
     </div>
 
-    <div class="panel">
-        <h3>Run Status: <span id="run-status" class="badge">NONE</span></h3>
-        <button onclick="sendCommand('pause')">Pause</button>
-        <button onclick="sendCommand('resume')">Resume</button>
-        <button onclick="sendCommand('stop')">Stop</button>
+    <!-- Run control card -->
+    <div class="card">
+      <h2>Run Control</h2>
+      <div id="run-info">No active run</div>
+      <div class="controls">
+        <button class="btn-warning btn-sm" onclick="sendCommand('pause')">⏸ Pause</button>
+        <button class="btn-success btn-sm" onclick="sendCommand('resume')">▶ Resume</button>
+        <button class="btn-danger btn-sm" onclick="sendCommand('stop')">⏹ Stop</button>
+      </div>
     </div>
 
-    <div class="panel">
-        <h3>Tasks</h3>
-        <table id="tasks-table">
-            <thead>
-                <tr>
-                    <th>File</th>
-                    <th>Status</th>
-                    <th>Reason Code</th>
-                    <th>Bill Decision</th>
-                    <th>Pay Decision</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
+    <!-- Approvals card -->
+    <div class="card" style="flex:1; overflow-y:auto;">
+      <h2>⚠ Pending Approvals</h2>
+      <div id="approvals-container">
+        <p id="no-approvals">No pending approvals</p>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main pane ── -->
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('events')">📋 Live Events</div>
+      <div class="tab"        onclick="switchTab('tasks')">📄 Tasks</div>
+    </div>
+
+    <!-- Events tab -->
+    <div id="events-tab" class="tab-content active">
+      <div id="events-log"><span style="color:var(--muted)">Waiting for first run…</span></div>
+    </div>
+
+    <!-- Tasks tab -->
+    <div id="tasks-tab" class="tab-content">
+      <div id="tasks-tab-content">
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice file</th>
+              <th>Status</th>
+              <th>Bill</th>
+              <th>Pay</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="tasks-tbody"></tbody>
         </table>
+      </div>
     </div>
+  </div>
 
-    <div class="panel">
-        <h3>Pending Approvals</h3>
-        <div id="approvals-container"></div>
-    </div>
+</div>
 
-    <div class="panel" style="display:flex; gap: 20px;">
-        <div style="flex: 1;">
-            <h3>Events Log</h3>
-            <div id="events-log" class="log"></div>
-        </div>
-        <div style="flex: 1;">
-            <h3>Screenshot</h3>
-            <img id="screenshot" style="max-width: 100%; border: 1px solid #ccc; min-height: 200px;" />
-        </div>
-    </div>
+<!-- Toast -->
+<div id="toast"></div>
 
-    <script>
-        let currentRunId = null;
+<script>
+  let currentRunId = null;
+  let lastEventCount = 0;
 
-        async function loadPreset(name) {
-            const res = await fetch(`/presets/${name}`, { method: 'POST' });
-            const data = await res.json();
-            document.getElementById('goal').value = data.goal_text;
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  function toast(msg, type = 'info') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${type}`;
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.className = ''; }, 3500);
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      const id = ['events', 'tasks'][i];
+      t.classList.toggle('active', id === name);
+    });
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    document.getElementById(`${name}-tab`).classList.add('active');
+  }
+
+  // ── Presets ─────────────────────────────────────────────────────────────────
+  async function loadPreset(name) {
+    const res = await fetch(`/presets/${name}`, { method: 'POST' });
+    const data = await res.json();
+    document.getElementById('goal-input').value = data.goal_text;
+    toast('Preset loaded — edit if needed, then Submit.', 'info');
+  }
+
+  function clearGoal() {
+    document.getElementById('goal-input').value = '';
+    document.getElementById('goal-summary').classList.remove('visible');
+  }
+
+  // ── Submit goal ────────────────────────────────────────────────────────────
+  async function submitGoal(e) {
+    e.preventDefault();
+    const goalText = document.getElementById('goal-input').value.trim();
+    if (!goalText) { toast('Please enter a goal first.', 'error'); return; }
+    const fd = new FormData();
+    fd.append('goal_text', goalText);
+    fd.append('inbox', 'data/batch_a');
+    const res = await fetch('/goal', { method: 'POST', body: fd });
+    const data = await res.json();
+    const summary = document.getElementById('goal-summary');
+    summary.textContent = `✅ ${data.message}`;
+    summary.classList.add('visible');
+    toast('Goal queued! Start the operator in the terminal.', 'success');
+  }
+
+  // ── Commands ───────────────────────────────────────────────────────────────
+  async function sendCommand(kind) {
+    if (!currentRunId) { toast('No active run to control.', 'error'); return; }
+    await fetch('/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ run_id: currentRunId, kind })
+    });
+    toast(`Command '${kind}' sent to run ${currentRunId}.`, 'success');
+    pollStatus();
+  }
+
+  // ── Approve / Reject ───────────────────────────────────────────────────────
+  async function approve(id) {
+    const res = await fetch(`/approve/${id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'ok') toast('✅ Approved!', 'success');
+    else toast('Error approving: ' + (data.detail || data.status), 'error');
+    pollStatus();
+  }
+  async function reject(id) {
+    const res = await fetch(`/reject/${id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'ok') toast('🚫 Rejected.', 'success');
+    else toast('Error rejecting: ' + (data.detail || data.status), 'error');
+    pollStatus();
+  }
+
+  // ── Badge colours ──────────────────────────────────────────────────────────
+  function statusClass(s) {
+    const map = {
+      NONE: 's-none', RUNNING: 's-running', PAUSED: 's-paused',
+      STOPPED: 's-stopped', FINISHED: 's-finished',
+    };
+    return map[s] || 's-none';
+  }
+
+  // ── Pill helpers ───────────────────────────────────────────────────────────
+  function decisionPill(v) {
+    if (!v) return '<span class="pill pill-gray">—</span>';
+    const cls = {
+      ENTER: 'green', AUTO: 'green', APPROVE: 'yellow', NONE: 'gray',
+      HOLD: 'yellow', QUARANTINE: 'red', SKIP: 'gray', BLOCK: 'red',
+    }[v] || 'blue';
+    return `<span class="pill pill-${cls}">${v}</span>`;
+  }
+
+  function taskStatusPill(s) {
+    const cls = {
+      done: 'green', held: 'yellow', error: 'red', running: 'blue',
+      quarantined: 'red', skipped: 'gray', pending: 'gray',
+    }[s] || 'gray';
+    return `<span class="pill pill-${cls}">${s}</span>`;
+  }
+
+  function eventClass(kind) {
+    kind = kind.toLowerCase();
+    if (kind.includes('hold') || kind.includes('warn') || kind.includes('approval'))
+      return 'hold';
+    if (kind.includes('error') || kind.includes('fail') || kind.includes('unknown'))
+      return 'error';
+    if (kind.includes('enter') || kind.includes('done') || kind.includes('complete') ||
+        kind.includes('confirm') || kind.includes('paid'))
+      return 'ok';
+    return 'info';
+  }
+
+  // ── Poll ───────────────────────────────────────────────────────────────────
+  async function pollStatus() {
+    let data;
+    try {
+      const res = await fetch('/status');
+      if (!res.ok) return;
+      data = await res.json();
+    } catch { return; }
+
+    if (data.run_id) currentRunId = data.run_id;
+
+    // Badge
+    const badge = document.getElementById('status-badge');
+    badge.textContent = data.run_status || 'NONE';
+    badge.className   = statusClass(data.run_status || 'NONE');
+
+    // Run info
+    const ri = document.getElementById('run-info');
+    if (data.run_id) {
+      const verdictBit = data.verdict ? ` — Verdict: <b>${data.verdict}</b>` : '';
+      ri.innerHTML = `Run <code>${data.run_id}</code>${verdictBit}`;
+    } else {
+      ri.textContent = 'No active run';
+    }
+
+    // Tasks
+    const tbody = document.getElementById('tasks-tbody');
+    tbody.innerHTML = '';
+    for (const t of (data.tasks || [])) {
+      const fname = t.file ? t.file.split(/[\\/]/).pop() : '—';
+      tbody.innerHTML += `<tr>
+        <td style="font-family:var(--mono); font-size:0.78rem;">${fname}</td>
+        <td>${taskStatusPill(t.status)}</td>
+        <td>${decisionPill(t.bill_decision)}</td>
+        <td>${decisionPill(t.pay_decision)}</td>
+        <td style="color:var(--muted); font-size:0.78rem;">${t.reason_code || ''}</td>
+      </tr>`;
+    }
+
+    // Approvals
+    const ac = document.getElementById('approvals-container');
+    const na = document.getElementById('no-approvals');
+    const apps = data.approvals || [];
+    if (apps.length === 0) {
+      ac.innerHTML = '<p id="no-approvals">No pending approvals</p>';
+    } else {
+      ac.innerHTML = '';
+      for (const a of apps) {
+        const p = a.payload || {};
+        const amountRs = p.amount_paise != null ? `₹${(p.amount_paise/100).toLocaleString('en-IN',{minimumFractionDigits:2})}` : '—';
+        ac.innerHTML += `
+          <div class="approval-card">
+            <h3>⚠ Approval required — ${amountRs}</h3>
+            <pre>${JSON.stringify(p, null, 2)}</pre>
+            <div class="approval-actions">
+              <button class="btn-success btn-sm" onclick="approve(${a.id})">✔ Approve</button>
+              <button class="btn-danger btn-sm"  onclick="reject(${a.id})">✘ Reject</button>
+            </div>
+          </div>`;
+      }
+    }
+
+    // Events
+    const events = data.events || [];
+    if (events.length !== lastEventCount) {
+      lastEventCount = events.length;
+      const log = document.getElementById('events-log');
+      if (events.length === 0) {
+        log.innerHTML = '<span style="color:var(--muted)">No events yet.</span>';
+      } else {
+        log.innerHTML = events.map(e => {
+          const ts    = e.ts ? e.ts.replace('T', ' ').replace('Z', '') : '';
+          const kind  = e.kind || '';
+          const cls   = eventClass(kind);
+          const detail = e.task_id
+            ? `task=${e.task_id}`
+            : (e.payload && Object.keys(e.payload).length > 0
+               ? JSON.stringify(e.payload).slice(0, 120)
+               : '');
+          return `<div class="event-row">
+            <span class="event-ts">${ts}</span>
+            <span class="event-kind ${cls}">${kind}</span>
+            <span class="event-detail">${detail}</span>
+          </div>`;
+        }).join('');
+        // Auto-scroll only if at bottom
+        if (log.scrollTop + log.clientHeight >= log.scrollHeight - 40) {
+          log.scrollTop = log.scrollHeight;
         }
+      }
+    }
+  }
 
-        async function sendCommand(kind) {
-            if (!currentRunId) return;
-            await fetch('/command', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ run_id: currentRunId, kind: kind })
-            });
-            pollStatus();
-        }
-
-        async function approve(id) {
-            await fetch(`/approve/${id}`, { method: 'POST' });
-            pollStatus();
-        }
-
-        async function reject(id) {
-            await fetch(`/reject/${id}`, { method: 'POST' });
-            pollStatus();
-        }
-
-        async function confirmSpec() {
-            const spec = document.getElementById('spec-json').value;
-            await fetch(`/runs/${currentRunId}/spec`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ spec_json: spec })
-            });
-            document.getElementById('spec-editor').style.display = 'none';
-        }
-
-        async function pollStatus() {
-            const res = await fetch('/status');
-            const data = await res.json();
-            
-            if (data.run_id) currentRunId = data.run_id;
-            
-            const badge = document.getElementById('run-status');
-            badge.textContent = data.run_status;
-            badge.className = 'badge ' + data.run_status.toLowerCase();
-            
-            const tbody = document.querySelector('#tasks-table tbody');
-            tbody.innerHTML = '';
-            for (const t of data.tasks) {
-                tbody.innerHTML += `<tr>
-                    <td>${t.file}</td>
-                    <td>${t.status}</td>
-                    <td>${t.reason_code}</td>
-                    <td>${t.bill_decision}</td>
-                    <td>${t.pay_decision}</td>
-                </tr>`;
-            }
-
-            const appContainer = document.getElementById('approvals-container');
-            appContainer.innerHTML = '';
-            for (const a of data.approvals) {
-                appContainer.innerHTML += `<div class="approval-card">
-                    <strong>Task:</strong> ${a.task_id} <br>
-                    <strong>Payload:</strong> <pre>${JSON.stringify(a.payload, null, 2)}</pre>
-                    <button onclick="approve(${a.id})">Approve</button>
-                    <button onclick="reject(${a.id})">Reject</button>
-                </div>`;
-            }
-
-            const log = document.getElementById('events-log');
-            log.innerHTML = '';
-            for (const e of data.events) {
-                log.innerHTML += `<div>[${e.ts}] <b>${e.kind}</b> - ${JSON.stringify(e.payload)}</div>`;
-            }
-
-            if (currentRunId) {
-                document.getElementById('screenshot').src = `/screenshot/${currentRunId}?t=${new Date().getTime()}`;
-            }
-        }
-
-        setInterval(pollStatus, 2000);
-        pollStatus();
-    </script>
+  // Poll every 2 s
+  setInterval(pollStatus, 2000);
+  pollStatus();
+</script>
 </body>
 </html>

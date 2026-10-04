@@ -134,8 +134,8 @@ def bills_list(request: Request, q: str = "", vendor: str = "", page: int = 1, _
         query += " AND (b.invoice_no LIKE ? OR b.internal_ref LIKE ?)"
         params.extend([f"%{q}%", f"%{q}%"])
     if vendor:
-        query += " AND v.name LIKE ?"
-        params.append(f"%{vendor}%")
+        query += " AND (v.name LIKE ? OR b.vendor_id = ?)"
+        params.extend([f"%{vendor}%", vendor])
         
     query += " ORDER BY b.created_at DESC LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
@@ -147,7 +147,7 @@ def bills_list(request: Request, q: str = "", vendor: str = "", page: int = 1, _
     if q:
         count_query += " AND (b.invoice_no LIKE ? OR b.internal_ref LIKE ?)"
     if vendor:
-        count_query += " AND v.name LIKE ?"
+        count_query += " AND (v.name LIKE ? OR b.vendor_id = ?)"
     
     count_params = params[:-2]
     total = conn.execute(count_query, count_params).fetchone()['c']
